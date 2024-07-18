@@ -1,6 +1,4 @@
-# see: https://developers.google.com/youtube/v3/quickstart/python
-# see: https://developers.google.com/youtube/v3/docs/videos/list
-# see: https://www.youtube.com/watch?v=vQQEaSnQ_bs
+from datetime import datetime
 import logging
 import os
 
@@ -8,8 +6,9 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build, Resource
+from pydantic import BaseModel, ValidationError
 
-# from liked_videos.utils import pretty_print_json
+from liked_videos.utils import pretty_json, pretty_print_json
 
 logger = logging.getLogger(__name__)
 
@@ -93,14 +92,69 @@ def create_authenticated_client() -> Resource:
     return build(credentials=credentials, serviceName="youtube", version="v3")
 
 
-# TODO: improve return type
-def fetch_liked_videos(client: Resource) -> list[dict]:
-    request = client.videos().list(
-        myRating="like",
-        part="snippet,contentDetails,statistics",
-    )
+class YouTubeVideo(BaseModel):
+    channel: str
+    date: datetime
+    id: str
+    title: str
 
-    response: dict = request.execute()
-    # pretty_print_json(response)
 
-    return response["items"]
+def _parse_youtube_videos(response: dict) -> list[YouTubeVideo]:
+    videos = []
+
+    for item in response.get("items", []):
+        try:
+            video_data = {
+                "channel": item["snippet"]["channelTitle"],
+                "date": item["snippet"]["publishedAt"],
+                "id": item["id"],
+                "title": item["snippet"]["title"],
+            }
+            video = YouTubeVideo(**video_data)
+            videos.append(video)
+        except KeyError as e:
+            logger.error(f"Missing key in video data: {e}")
+        except ValidationError as e:
+            logger.error(f"Validation error for video data: {e}")
+
+    return videos
+
+
+def fetch_liked_videos(client: Resource) -> list[YouTubeVideo]:
+    """
+    Fetches my liked videos from YouTube using a client authenticated via Oath.
+
+    YouTube API docs: https://developers.google.com/youtube/v3/docs/videos/list
+    """
+    liked_videos: list[YouTubeVideo] = []
+    maxResultsPerPage = 50
+    nextPageToken = None  # empty for the first request
+
+    while True:
+        try:
+            logger.info(f"Fetching next {maxResultsPerPage} liked videos")
+
+            liked_videos_request = client.videos().list(
+                maxResults=maxResultsPerPage,
+                myRating="like",
+                pageToken=nextPageToken,  # comes from the previous request
+                part="snippet",
+            )
+
+            response: dict = liked_videos_request.execute()
+            logger.debug(f"Liked videos response:\n{pretty_json(response)}")
+
+            new_videos = _parse_youtube_videos(response)
+            logger.debug(f"Found {len(new_videos)} new liked videos")
+
+            liked_videos.extend(_parse_youtube_videos(response))
+
+            nextPageToken = response.get("nextPageToken")
+            if not nextPageToken:
+                break
+        except Exception as e:
+            logger.error(f"Error fetching liked videos: {e}")
+            raise
+
+    logger.info(f"Found {len(liked_videos)} liked videos")
+    return liked_videos

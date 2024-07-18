@@ -9,6 +9,7 @@ dependencies = [
     "google-auth-oauthlib>=1.2.1",
     "google-api-python-client>=2.137.0",
     "mypy>=1.10.1",
+    "pydantic>=2.8.2",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"

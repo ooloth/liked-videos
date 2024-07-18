@@ -1,5 +1,4 @@
 from datetime import datetime
-import logging
 import os
 
 from google.auth.transport.requests import Request
@@ -8,9 +7,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build, Resource
 from pydantic import BaseModel, ValidationError
 
+from liked_videos.logging import log
 from liked_videos.utils import pretty_json, pretty_print_json
-
-logger = logging.getLogger(__name__)
 
 
 API_SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]
@@ -27,17 +25,17 @@ def _fetch_new_oauth_tokens(
 
     OAuth client: https://console.cloud.google.com/apis/credentials?project=michael-uloth
     """
-    logger.info("Fetching new tokens")
+    log.info("🥁 Fetching new tokens...")
 
     try:
         flow = InstalledAppFlow.from_client_secrets_file(client_secrets, scopes)
         credentials = flow.run_local_server()
         return credentials
     except FileNotFoundError as e:
-        logger.error(f"OAuth client secrets file not found: {e}")
+        log.error(f"😱 OAuth client secrets file not found: {e}")
         raise
     except Exception as e:
-        logger.error(f"Unexpected error while fetching new OAuth tokens: {e}")
+        log.error(f"😱 Unexpected error while fetching new OAuth tokens: {e}")
         raise
 
 
@@ -49,31 +47,31 @@ def _generate_oauth_credentials(tokens: str = OATH_TOKENS_FILE) -> Credentials:
     """
     credentials = None
 
-    logger.info("Checking for saved tokens")
+    log.info("🥁 Checking for saved tokens...")
 
     if os.path.exists(tokens):
-        logger.info("Saved tokens found")
+        log.info("👍 Saved tokens found")
         try:
-            logger.info(f"Loading saved tokens from {tokens}")
+            log.info(f'🥁 Loading saved tokens from "{tokens}"...')
             credentials = Credentials.from_authorized_user_file(tokens)
         except Exception as e:
-            logger.info(f"Error loading tokens: {e}")
+            log.error(f"😱 Error loading tokens: {e}")
             credentials = _fetch_new_oauth_tokens()
     else:
-        logger.info("No saved tokens found")
+        log.info("👎 No saved tokens found")
 
     if not credentials or not credentials.valid:
         if credentials and credentials.expired and credentials.refresh_token:
             try:
-                logger.info("Refreshing expired access token")
+                log.info("🥁 Refreshing expired access token...")
                 credentials.refresh(Request())
             except Exception as e:
-                logger.info(f"Error refreshing token: {e}")
+                log.error(f"😱 Error refreshing token: {e}")
                 credentials = _fetch_new_oauth_tokens()
         else:
             credentials = _fetch_new_oauth_tokens()
 
-        logger.info(f"Saving updated tokens to {tokens}")
+        log.info(f'🥁 Saving updated tokens to "{tokens}"...')
         with open(tokens, "w") as file:
             file.write(credentials.to_json())
 
@@ -102,6 +100,7 @@ class YouTubeVideo(BaseModel):
 def _parse_youtube_videos(response: dict) -> list[YouTubeVideo]:
     videos = []
 
+    log.debug(f"🥁 Parsing {len(response.get('items', []))} videos...")
     for item in response.get("items", []):
         try:
             video_data = {
@@ -113,10 +112,11 @@ def _parse_youtube_videos(response: dict) -> list[YouTubeVideo]:
             video = YouTubeVideo(**video_data)
             videos.append(video)
         except KeyError as e:
-            logger.error(f"Missing key in video data: {e}")
+            log.error(f"😱 Missing key in video data: {e}")
         except ValidationError as e:
-            logger.error(f"Validation error for video data: {e}")
+            log.error(f"😱 Validation error for video data: {e}")
 
+    log.debug(f"👍 Parsed {len(videos)} videos")
     return videos
 
 
@@ -130,9 +130,11 @@ def fetch_liked_videos(client: Resource) -> list[YouTubeVideo]:
     maxResultsPerPage = 50
     nextPageToken = None  # empty for the first request
 
+    log.info("🥁 Fetching liked videos...")
     while True:
         try:
-            logger.info(f"Fetching next {maxResultsPerPage} liked videos")
+            if nextPageToken:
+                log.debug(f"🥁 Fetching up to {maxResultsPerPage} more liked videos...")
 
             liked_videos_request = client.videos().list(
                 maxResults=maxResultsPerPage,
@@ -142,10 +144,10 @@ def fetch_liked_videos(client: Resource) -> list[YouTubeVideo]:
             )
 
             response: dict = liked_videos_request.execute()
-            logger.debug(f"Liked videos response:\n{pretty_json(response)}")
+            log.debug(f"🔍 Liked videos response:\n{pretty_json(response)}")
 
             new_videos = _parse_youtube_videos(response)
-            logger.debug(f"Found {len(new_videos)} new liked videos")
+            log.debug(f"👍 Fetched {len(new_videos)} new liked videos")
 
             liked_videos.extend(_parse_youtube_videos(response))
 
@@ -153,8 +155,8 @@ def fetch_liked_videos(client: Resource) -> list[YouTubeVideo]:
             if not nextPageToken:
                 break
         except Exception as e:
-            logger.error(f"Error fetching liked videos: {e}")
+            log.error(f"😱 Error fetching liked videos: {e}")
             raise
 
-    logger.info(f"Found {len(liked_videos)} liked videos")
+    log.info(f"👍 Fetched {len(liked_videos)} liked videos")
     return liked_videos

@@ -23,7 +23,9 @@ build-backend = "hatchling.build"
 
 [tool.rye]
 managed = true
-dev-dependencies = []
+dev-dependencies = [
+    "google-api-python-client-stubs>=1.26.0",
+]
 
 [tool.hatch.metadata]
 allow-direct-references = true

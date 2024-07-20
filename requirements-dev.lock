@@ -21,7 +21,9 @@ charset-normalizer==3.3.2
 google-api-core==2.19.1
     # via google-api-python-client
 google-api-python-client==2.137.0
+    # via google-api-python-client-stubs
     # via liked-videos
+google-api-python-client-stubs==1.26.0
 google-auth==2.32.0
     # via google-api-core
     # via google-api-python-client
@@ -68,7 +70,10 @@ requests-oauthlib==2.0.0
     # via google-auth-oauthlib
 rsa==4.9
     # via google-auth
+types-httplib2==0.22.0.20240310
+    # via google-api-python-client-stubs
 typing-extensions==4.12.2
+    # via google-api-python-client-stubs
     # via mypy
     # via pydantic
     # via pydantic-core

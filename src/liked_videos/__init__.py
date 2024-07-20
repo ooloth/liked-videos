@@ -3,7 +3,8 @@ from typing import Literal
 from liked_videos.logging import configure_logger, log
 
 # from liked_videos import notes
-from liked_videos import youtube
+from liked_videos.youtube import client as yt
+from liked_videos.youtube.videos import fetch_liked_videos
 
 
 configure_logger()  # one-time setup on startup
@@ -13,7 +14,7 @@ configure_logger()  # one-time setup on startup
 # TODO: persist logs somewhere? file? sqlite db? cloud logging service?
 def main() -> Literal[0, 1]:
     try:
-        liked_videos = youtube.fetch_liked_videos(youtube.create_authenticated_client())
+        liked_videos = fetch_liked_videos(yt.create_authenticated_client())
         # TODO: fetch youtube videos in my notes (reference local path to notes? assume host has no such path and temporarily clone the repo?)
         # youtube_videos_in_notes = notes.fetch_youtube_video_ids()
         # TODO: identify which liked videos are missing from my notes

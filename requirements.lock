@@ -65,6 +65,8 @@ pydantic-core==2.20.1
     # via pydantic
 pyparsing==3.1.2
     # via httplib2
+python-dotenv==1.0.1
+    # via liked-videos
 requests==2.32.3
     # via google-api-core
     # via requests-oauthlib

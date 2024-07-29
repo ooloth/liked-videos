@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 import os
 
 from google.auth.transport.requests import Request
@@ -7,10 +8,11 @@ from googleapiclient.discovery import build, Resource
 
 from liked_videos.logging import log
 
+load_dotenv()
 
 API_SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]
-OATH_CLIENT_SECRETS_FILE = ".secrets/oath_client_secrets.json"
-OATH_TOKENS_FILE = ".secrets/oath_tokens.json"
+OATH_CLIENT_SECRETS_FILE = os.getenv("OATH_CLIENT_SECRETS_FILE") or ""
+OATH_TOKENS_FILE = os.getenv("OATH_TOKENS_FILE") or ""
 
 
 def _fetch_new_oauth_tokens(

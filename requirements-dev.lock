@@ -18,6 +18,10 @@ certifi==2024.7.4
     # via requests
 charset-normalizer==3.3.2
     # via requests
+gitdb==4.0.11
+    # via gitpython
+gitpython==3.1.43
+    # via liked-videos
 google-api-core==2.19.1
     # via google-api-python-client
 google-api-python-client==2.137.0
@@ -70,6 +74,8 @@ requests-oauthlib==2.0.0
     # via google-auth-oauthlib
 rsa==4.9
     # via google-auth
+smmap==5.0.1
+    # via gitdb
 types-httplib2==0.22.0.20240310
     # via google-api-python-client-stubs
 typing-extensions==4.12.2

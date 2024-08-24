@@ -25,6 +25,8 @@ def _fetch_new_oauth_tokens(
     OAuth client: https://console.cloud.google.com/apis/credentials?project=michael-uloth
     """
     log.info("🥁 Fetching new tokens...")
+    assert client_secrets, "😱 No OAuth client secrets file provided"
+    assert scopes, "😱 No OAuth scopes provided"
 
     try:
         flow = InstalledAppFlow.from_client_secrets_file(client_secrets, scopes)
